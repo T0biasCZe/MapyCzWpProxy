@@ -77,8 +77,22 @@ $listener.Prefixes.Add($Prefix)
 
 try {
     $listener.Start()
-    Write-Host "Mapy proxy listening on $Prefix (Port $Port)..."
-    Write-Host "Press Ctrl+C to stop."
+
+    $localIps = [System.Net.Dns]::GetHostAddresses([System.Net.Dns]::GetHostName()) |
+        Where-Object { 
+            $_.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetwork -and 
+            -not [System.Net.IPAddress]::IsLoopback($_) 
+        } |
+        Select-Object -ExpandProperty IPAddressToString
+
+    Write-Host "Mapy proxy listening on port $Port..." -ForegroundColor Green
+    if ($localIps) {
+        Write-Host "Use one of these endpoints on your Windows Phone:" -ForegroundColor Cyan
+        foreach ($ip in $localIps) {
+            Write-Host "  -> http://${ip}:$Port/" -ForegroundColor Yellow
+        }
+    }
+    Write-Host "Press Ctrl+C to stop.`n"
 
     while ($listener.IsListening) {
         $context = $listener.GetContext()
